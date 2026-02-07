@@ -65,16 +65,7 @@ interface DrillsTabProps {
 export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
   const [selectedDrill, setSelectedDrill] = useState<{ category: string, card: string } | null>(null);
 
-  const handleCardPress = (category: string, card: string) => {
-    setSelectedDrill({ category, card });
-    onDrillActiveChange?.(true);
-  };
-
-  const handleBack = () => {
-    setSelectedDrill(null);
-    onDrillActiveChange?.(false);
-  };
-
+  // List of cards that should trigger a dedicated full-screen component
   const dedicatedComponents = [
     "The Clock", 
     "The Gate", 
@@ -93,6 +84,16 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
     "Accuracy",
     "Draw"
   ];
+
+  const handleCardPress = (category: string, card: string) => {
+    setSelectedDrill({ category, card });
+    onDrillActiveChange?.(true);
+  };
+
+  const handleBack = () => {
+    setSelectedDrill(null);
+    onDrillActiveChange?.(false);
+  };
 
   const renderDrillComponent = () => {
     if (!selectedDrill) return null;
@@ -118,12 +119,13 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
     }
   };
 
-  const hasDedicatedComponent = !!selectedDrill && dedicatedComponents.includes(selectedDrill.card);
+  // Improved Boolean check
+  const isDedicated = !!selectedDrill && dedicatedComponents.includes(selectedDrill.card);
 
   return (
     <View style={styles.mainContainer}>
       <SafeAreaView style={styles.container} edges={["top"]}>
-        {/* Only show the list if no drill is selected */}
+        {/* 1. Main Drill List - Only shows when nothing is selected */}
         {!selectedDrill && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <Text style={styles.title}>Drills 🏋️</Text>
@@ -148,8 +150,8 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
           </ScrollView>
         )}
 
-        {/* Fallback detail view for cards not in dedicatedComponents */}
-        {selectedDrill && !hasDedicatedComponent && (
+        {/* 2. Fallback Detail View - Only shows if selected but NOT dedicated */}
+        {selectedDrill && !isDedicated && (
           <View style={styles.detailContainer}>
             <View style={styles.statCardWrapper}>
               <StatCard label="Drill Name" value={selectedDrill.card} />
@@ -164,8 +166,8 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
         )}
       </SafeAreaView>
 
-      {/* Full screen dedicated drill view */}
-      {selectedDrill && hasDedicatedComponent && (
+      {/* 3. The Actual Drill - Shows immediately on first press for dedicated components */}
+      {selectedDrill && isDedicated && (
         <View style={styles.drillWrapper}>
           {renderDrillComponent()}
         </View>
