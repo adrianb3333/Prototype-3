@@ -25,7 +25,7 @@ const SignOutButton = ({ style }: SignOutButtonProps) => {
       onPress={handleSignOut}
       activeOpacity={0.7}
     >
-      <往Text style={styles.buttonText}>Sign Out</Text>
+      <Text style={styles.buttonText}>Sign Out</Text>
     </TouchableOpacity>
   );
 };
