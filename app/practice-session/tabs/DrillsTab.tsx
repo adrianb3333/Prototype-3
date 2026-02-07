@@ -206,19 +206,4 @@ const styles = StyleSheet.create({
   overlayContent: { paddingHorizontal: 16, paddingTop: 20, alignItems: "center", zIndex: 1 },
   backButtonInline: { alignSelf: "flex-start", marginBottom: 20 },
   detailCategory: { color: "#666", fontSize: 18, marginTop: 60, textAlign: "center" },
-});    borderLeftWidth: 5, 
-    borderLeftColor: '#E63946', 
-  },
-  backText: { color: "#2d5a27", fontSize: 14, fontWeight: "600" },
-  drillWrapper: { 
-    position: 'absolute',
-    top: 0, left: 0, right: 0, bottom: 0,
-    zIndex: 9999,
-    backgroundColor: '#000' 
-  },
-  detailContainer: { flex: 1 },
-  statCardWrapper: { position: "absolute", top: -height * 0.25, left: -width * 0.1, width: width * 1.2, height: height * 1.5, zIndex: 0 },
-  overlayContent: { paddingHorizontal: 16, paddingTop: 20, alignItems: "center", zIndex: 1 },
-  backButtonInline: { alignSelf: "flex-start", marginBottom: 20 },
-  detailCategory: { color: "#666", fontSize: 18, marginTop: 60, textAlign: "center" },
 });
