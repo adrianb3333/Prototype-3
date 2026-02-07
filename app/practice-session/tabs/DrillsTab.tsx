@@ -75,7 +75,6 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
     onDrillActiveChange?.(false);
   };
 
-  // List of cards that should trigger a dedicated full-screen component
   const dedicatedComponents = [
     "The Clock", 
     "The Gate", 
@@ -89,66 +88,42 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
     "Mr Routine",      
     "Distance control",
     "Pause",
-    "Power Line",     // Added
-    "Fade",           // Added
-    "Accuracy",       // Added
-    "Draw"            // Added
+    "Power Line",
+    "Fade",
+    "Accuracy",
+    "Draw"
   ];
 
   const renderDrillComponent = () => {
     if (!selectedDrill) return null;
 
     switch (selectedDrill.card) {
-      // Putting
-      case "The Clock":
-        return <Clock onBack={handleBack} drillName="The Clock" />;
-      case "The Gate":
-        return <Gate onBack={handleBack} drillName="The Gate" />;
-      case "The Ladder":
-        return <Ladder onBack={handleBack} drillName="The Ladder" />;
-      case "27 Challenge":
-        return <Challenge27 onBack={handleBack} />;
-      
-      // Wedges
-      case "Bunker":
-        return <Bunker onBack={handleBack} drillName="Bunker Pro" />;
-      case "Cirkel":
-        return <Cirkel onBack={handleBack} drillName="The Cirkel" />;
-      case "5-30m":
-        return <W5_30m onBack={handleBack} drillName="Wedge 5-30m" />;
-      case "Area Towel":
-        return <AreaTowel onBack={handleBack} drillName="Area Towel Drill" />;
-      
-      // Irons
-      case "9 box":
-        return <Box9 onBack={handleBack} drillName="9 Box" />;
-      case "Mr Routine":
-        return <MrRoutine onBack={handleBack} drillName="My Routine" />;
-      case "Distance control":
-        return <DistanceControl onBack={handleBack} drillName="Distance Control" />;
-      case "Pause":
-        return <Pause onBack={handleBack} drillName="Pause Drill" />;
-
-      // Woods (New Integration)
-      case "Power Line":
-        return <PowerLine onBack={handleBack} drillName="Power Line" />;
-      case "Fade":
-        return <Fade onBack={handleBack} drillName="The Fade" />;
-      case "Accuracy":
-        return <Accuracy onBack={handleBack} drillName="Accuracy" />;
-      case "Draw":
-        return <Draw onBack={handleBack} drillName="The Draw" />;
-        
-      default:
-        return null;
+      case "The Clock": return <Clock onBack={handleBack} drillName="The Clock" />;
+      case "The Gate": return <Gate onBack={handleBack} drillName="The Gate" />;
+      case "The Ladder": return <Ladder onBack={handleBack} drillName="The Ladder" />;
+      case "27 Challenge": return <Challenge27 onBack={handleBack} />;
+      case "Bunker": return <Bunker onBack={handleBack} drillName="Bunker Pro" />;
+      case "Cirkel": return <Cirkel onBack={handleBack} drillName="The Cirkel" />;
+      case "5-30m": return <W5_30m onBack={handleBack} drillName="Wedge 5-30m" />;
+      case "Area Towel": return <AreaTowel onBack={handleBack} drillName="Area Towel Drill" />;
+      case "9 box": return <Box9 onBack={handleBack} drillName="9 Box" />;
+      case "Mr Routine": return <MrRoutine onBack={handleBack} drillName="My Routine" />;
+      case "Distance control": return <DistanceControl onBack={handleBack} drillName="Distance Control" />;
+      case "Pause": return <Pause onBack={handleBack} drillName="Pause Drill" />;
+      case "Power Line": return <PowerLine onBack={handleBack} drillName="Power Line" />;
+      case "Fade": return <Fade onBack={handleBack} drillName="The Fade" />;
+      case "Accuracy": return <Accuracy onBack={handleBack} drillName="Accuracy" />;
+      case "Draw": return <Draw onBack={handleBack} drillName="The Draw" />;
+      default: return null;
     }
   };
 
-  const hasDedicatedComponent = dedicatedComponents.includes(selectedDrill?.card || "");
+  const hasDedicatedComponent = !!selectedDrill && dedicatedComponents.includes(selectedDrill.card);
 
   return (
     <View style={styles.mainContainer}>
       <SafeAreaView style={styles.container} edges={["top"]}>
+        {/* Only show the list if no drill is selected */}
         {!selectedDrill && (
           <ScrollView contentContainerStyle={styles.scrollContent}>
             <Text style={styles.title}>Drills 🏋️</Text>
@@ -173,6 +148,7 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
           </ScrollView>
         )}
 
+        {/* Fallback detail view for cards not in dedicatedComponents */}
         {selectedDrill && !hasDedicatedComponent && (
           <View style={styles.detailContainer}>
             <View style={styles.statCardWrapper}>
@@ -188,6 +164,7 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
         )}
       </SafeAreaView>
 
+      {/* Full screen dedicated drill view */}
       {selectedDrill && hasDedicatedComponent && (
         <View style={styles.drillWrapper}>
           {renderDrillComponent()}
@@ -215,6 +192,21 @@ const styles = StyleSheet.create({
     borderWidth: 1, 
     borderColor: 'rgba(0,0,0,0.08)',
     borderLeftWidth: 5, 
+    borderLeftColor: '#E63946', 
+  },
+  backText: { color: "#2d5a27", fontSize: 14, fontWeight: "600" },
+  drillWrapper: { 
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 9999,
+    backgroundColor: '#000' 
+  },
+  detailContainer: { flex: 1 },
+  statCardWrapper: { position: "absolute", top: -height * 0.25, left: -width * 0.1, width: width * 1.2, height: height * 1.5, zIndex: 0 },
+  overlayContent: { paddingHorizontal: 16, paddingTop: 20, alignItems: "center", zIndex: 1 },
+  backButtonInline: { alignSelf: "flex-start", marginBottom: 20 },
+  detailCategory: { color: "#666", fontSize: 18, marginTop: 60, textAlign: "center" },
+});    borderLeftWidth: 5, 
     borderLeftColor: '#E63946', 
   },
   backText: { color: "#2d5a27", fontSize: 14, fontWeight: "600" },
