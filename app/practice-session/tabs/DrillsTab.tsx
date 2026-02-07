@@ -9,31 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Colors from '@/constants/colors';
-
-// Reusable components
 import StatCard from "@/components/reusables/StatCard";
-
-// Drill components from /ovningar/
-import Clock from "@/components/ovningar/Clock";
-import Gate from "@/components/ovningar/Gate";
-import Ladder from "@/components/ovningar/Ladder";
-import Challenge27 from "@/components/ovningar/Challange27";
-import Bunker from "@/components/ovningar/Bunker";
-import Cirkel from "@/components/ovningar/Cirkel";
-import W5_30m from "@/components/ovningar/W5-30m"; 
-import AreaTowel from "@/components/ovningar/AreaTowel";
-
-// Iron Drills
-import Box9 from "@/components/ovningar/Box9";
-import MrRoutine from "@/components/ovningar/MrRoutine";
-import DistanceControl from "@/components/ovningar/DistanceControl";
-import Pause from "@/components/ovningar/Pause";
-
-// New Wood Drills Integration
-import PowerLine from "@/components/ovningar/PowerLine";
-import Fade from "@/components/ovningar/Fade";
-import Accuracy from "@/components/ovningar/Accuracy";
-import Draw from "@/components/ovningar/Draw";
 
 const { width, height } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.45;
@@ -98,25 +74,75 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
   const renderDrillComponent = () => {
     if (!selectedDrill) return null;
 
-    switch (selectedDrill.card) {
-      case "The Clock": return <Clock onBack={handleBack} drillName="The Clock" />;
-      case "The Gate": return <Gate onBack={handleBack} drillName="The Gate" />;
-      case "The Ladder": return <Ladder onBack={handleBack} drillName="The Ladder" />;
-      case "27 Challenge": return <Challenge27 onBack={handleBack} />;
-      case "Bunker": return <Bunker onBack={handleBack} drillName="Bunker Pro" />;
-      case "Cirkel": return <Cirkel onBack={handleBack} drillName="The Cirkel" />;
-      case "5-30m": return <W5_30m onBack={handleBack} drillName="Wedge 5-30m" />;
-      case "Area Towel": return <AreaTowel onBack={handleBack} drillName="Area Towel Drill" />;
-      case "9 box": return <Box9 onBack={handleBack} drillName="9 Box" />;
-      case "Mr Routine": return <MrRoutine onBack={handleBack} drillName="My Routine" />;
-      case "Distance control": return <DistanceControl onBack={handleBack} drillName="Distance Control" />;
-      case "Pause": return <Pause onBack={handleBack} drillName="Pause Drill" />;
-      case "Power Line": return <PowerLine onBack={handleBack} drillName="Power Line" />;
-      case "Fade": return <Fade onBack={handleBack} drillName="The Fade" />;
-      case "Accuracy": return <Accuracy onBack={handleBack} drillName="Accuracy" />;
-      case "Draw": return <Draw onBack={handleBack} drillName="The Draw" />;
-      default: return null;
-    }
+    const drillMap: Record<string, () => JSX.Element> = {
+      "The Clock": () => {
+        const Clock = require("@/components/ovningar/Clock").default;
+        return <Clock onBack={handleBack} drillName="The Clock" />;
+      },
+      "The Gate": () => {
+        const Gate = require("@/components/ovningar/Gate").default;
+        return <Gate onBack={handleBack} drillName="The Gate" />;
+      },
+      "The Ladder": () => {
+        const Ladder = require("@/components/ovningar/Ladder").default;
+        return <Ladder onBack={handleBack} drillName="The Ladder" />;
+      },
+      "27 Challenge": () => {
+        const Challenge27 = require("@/components/ovningar/Challange27").default;
+        return <Challenge27 onBack={handleBack} />;
+      },
+      "Bunker": () => {
+        const Bunker = require("@/components/ovningar/Bunker").default;
+        return <Bunker onBack={handleBack} drillName="Bunker Pro" />;
+      },
+      "Cirkel": () => {
+        const Cirkel = require("@/components/ovningar/Cirkel").default;
+        return <Cirkel onBack={handleBack} drillName="The Cirkel" />;
+      },
+      "5-30m": () => {
+        const W5_30m = require("@/components/ovningar/W5-30m").default;
+        return <W5_30m onBack={handleBack} drillName="Wedge 5-30m" />;
+      },
+      "Area Towel": () => {
+        const AreaTowel = require("@/components/ovningar/AreaTowel").default;
+        return <AreaTowel onBack={handleBack} drillName="Area Towel Drill" />;
+      },
+      "9 box": () => {
+        const Box9 = require("@/components/ovningar/Box9").default;
+        return <Box9 onBack={handleBack} drillName="9 Box" />;
+      },
+      "Mr Routine": () => {
+        const MrRoutine = require("@/components/ovningar/MrRoutine").default;
+        return <MrRoutine onBack={handleBack} drillName="My Routine" />;
+      },
+      "Distance control": () => {
+        const DistanceControl = require("@/components/ovningar/DistanceControl").default;
+        return <DistanceControl onBack={handleBack} drillName="Distance Control" />;
+      },
+      "Pause": () => {
+        const Pause = require("@/components/ovningar/Pause").default;
+        return <Pause onBack={handleBack} drillName="Pause Drill" />;
+      },
+      "Power Line": () => {
+        const PowerLine = require("@/components/ovningar/PowerLine").default;
+        return <PowerLine onBack={handleBack} drillName="Power Line" />;
+      },
+      "Fade": () => {
+        const Fade = require("@/components/ovningar/Fade").default;
+        return <Fade onBack={handleBack} drillName="The Fade" />;
+      },
+      "Accuracy": () => {
+        const Accuracy = require("@/components/ovningar/Accuracy").default;
+        return <Accuracy onBack={handleBack} drillName="Accuracy" />;
+      },
+      "Draw": () => {
+        const Draw = require("@/components/ovningar/Draw").default;
+        return <Draw onBack={handleBack} drillName="The Draw" />;
+      },
+    };
+
+    const renderer = drillMap[selectedDrill.card];
+    return renderer ? renderer() : null;
   };
 
   // Improved Boolean check
@@ -166,7 +192,6 @@ export default function DrillsTab({ onDrillActiveChange }: DrillsTabProps) {
         )}
       </SafeAreaView>
 
-      {/* 3. The Actual Drill - Shows immediately on first press for dedicated components */}
       {selectedDrill && isDedicated && (
         <View style={styles.drillWrapper}>
           {renderDrillComponent()}
