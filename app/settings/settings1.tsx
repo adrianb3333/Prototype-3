@@ -15,6 +15,8 @@ import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
+// --- NEW IMPORT ---
+import SignOutButton from '@/components/SignOutButton'; 
 
 interface ProfileData {
   first_name: string;
@@ -185,6 +187,12 @@ export default function Settings1Screen() {
               </View>
             ))}
           </View>
+
+          {/* --- ADDED SIGN OUT BUTTON HERE --- */}
+          <View style={styles.signOutContainer}>
+             <SignOutButton />
+          </View>
+          
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -266,5 +274,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E8E8E8',
     marginLeft: 20,
+  },
+  // --- ADDED STYLE ---
+  signOutContainer: {
+    marginTop: 30,
+    marginBottom: 40,
+    paddingHorizontal: 16,
   },
 });
