@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase'; //
+import { supabase } from '@/lib/supabase';
 
 const UiTra = () => {
   const [loading, setLoading] = useState(true);
@@ -34,21 +34,29 @@ const UiTra = () => {
       }
 
       // 3. Manually fetch profile to avoid relationship errors
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('avatar_url, display_name')
-        .eq('id', drillData.user_id)
-        .single();
+      let profileData = null;
+      if (drillData.user_id) {
+        const { data, error: profileError } = await supabase
+          .from('profiles')
+          .select('avatar_url, display_name')
+          .eq('id', drillData.user_id)
+          .maybeSingle();
 
-      if (profileError) throw profileError;
+        if (profileError) {
+          console.log('Profile fetch warning:', profileError.message);
+        } else {
+          profileData = data;
+        }
+      }
 
       setLatestDrill({
         ...drillData,
         profiles: profileData
       });
 
-    } catch (error) {
-      console.log('Build/Fetch Error:', error);
+    } catch (error: any) {
+      console.log('fetchPracticeData error message:', error?.message);
+      console.log('fetchPracticeData error details:', error?.details);
     } finally {
       setLoading(false);
     }
