@@ -2,29 +2,51 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { supabase } from '@/lib/supabase';
 
+interface ProfileData {
+  avatar_url: string | null;
+  display_name: string | null;
+}
+
+interface DrillData {
+  drill_name: string;
+  score: number | null;
+  created_at: string;
+  profiles: ProfileData | null;
+}
+
 const UiTra = () => {
   const [loading, setLoading] = useState(true);
-  const [drillCount, setDrillCount] = useState(0);
-  const [latestDrill, setLatestDrill] = useState<any>(null);
+  const [drillCount, setDrillCount] = useState<number>(0);
+  const [latestDrill, setLatestDrill] = useState<DrillData | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fetchPracticeData = async () => {
     try {
-      // 1. Get the total count of drills for the header
+      setErrorMsg(null);
+
       const { count, error: countError } = await supabase
         .from('golf_drills')
         .select('*', { count: 'exact', head: true });
 
-      if (countError) throw countError;
+      if (countError) {
+        console.error('Count query failed:', countError.message, countError.details, countError.hint);
+        throw countError;
+      }
       setDrillCount(count || 0);
 
-      // 2. Get the latest drill + the user's profile info
+      if ((count ?? 0) === 0) {
+        console.log('No drills found, skipping latest drill fetch.');
+        setLatestDrill(null);
+        return;
+      }
+
       const { data, error: drillError } = await supabase
         .from('golf_drills')
         .select(`
           drill_name,
           score,
           created_at,
-          profiles (
+          profiles!golf_drills_user_id_fkey (
             avatar_url,
             display_name
           )
@@ -33,11 +55,30 @@ const UiTra = () => {
         .limit(1)
         .single();
 
-      if (drillError && drillError.code !== 'PGRST116') throw drillError; // PGRST116 is "no rows returned"
-      setLatestDrill(data);
+      if (drillError) {
+        if (drillError.code === 'PGRST116') {
+          console.log('No rows returned for latest drill (PGRST116).');
+          setLatestDrill(null);
+          return;
+        }
+        console.error('Drill query failed:', drillError.message, drillError.details, drillError.hint);
+        throw drillError;
+      }
 
-    } catch (error) {
-      console.error('Error fetching UI data:', error);
+      const formatted: DrillData = {
+        drill_name: data?.drill_name ?? '',
+        score: data?.score ?? null,
+        created_at: data?.created_at ?? '',
+        profiles: Array.isArray(data?.profiles) ? data.profiles[0] ?? null : data?.profiles ?? null,
+      };
+      setLatestDrill(formatted);
+
+    } catch (error: unknown) {
+      const err = error as { message?: string; details?: string };
+      const msg = err?.message ?? 'Unknown error';
+      console.error('fetchPracticeData error message:', msg);
+      console.error('fetchPracticeData error details:', err?.details ?? 'none');
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -67,10 +108,17 @@ const UiTra = () => {
     );
   }
 
-  // Format the timestamp (2025-10-13 style)
-  const dateString = latestDrill?.created_at 
-    ? new Date(latestDrill.created_at).toISOString().split('T')[0] 
-    : '';
+  const formatDate = (raw: string): string => {
+    try {
+      const d = new Date(raw);
+      if (isNaN(d.getTime())) return raw;
+      return d.toLocaleDateString('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    } catch {
+      return raw;
+    }
+  };
+
+  const dateString = latestDrill?.created_at ? formatDate(latestDrill.created_at) : '';
 
   return (
     <View style={styles.container}>
@@ -80,7 +128,12 @@ const UiTra = () => {
         <Text style={styles.countText}>({drillCount})</Text>
       </View>
 
-      {/* Main Practice Card */}
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
+
       {latestDrill ? (
         <View style={styles.card}>
           <View style={styles.leftColumn}>
@@ -112,6 +165,16 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 0,
   },
+  errorBox: {
+    backgroundColor: '#3A1A1A',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 13,
+  },
   center: {
     paddingVertical: 30,
     justifyContent: 'center' as const,
@@ -125,7 +188,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 17,
     fontWeight: '700' as const,
-    color: '#EFEFEF',
+    color: '#FFFFFF',
   },
   countText: {
     fontSize: 14,
@@ -133,7 +196,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   card: {
-    backgroundColor: '#1A2E1A',
+    backgroundColor: '#1A1A1A',
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: '#1DB954',
@@ -153,7 +216,7 @@ const styles = StyleSheet.create({
   drillName: {
     fontSize: 18,
     fontWeight: '800' as const,
-    color: '#EFEFEF',
+    color: '#FFFFFF',
   },
   dateText: {
     fontSize: 13,
