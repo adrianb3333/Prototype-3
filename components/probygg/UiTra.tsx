@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, ScrollView } from 'react-native';
-import { supabase } from '../lib/supabase'; // Ensure this path is correct for your project
+import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
+import { supabase } from '../lib/supabase'; //
 
 const UiTra = () => {
   const [loading, setLoading] = useState(true);
@@ -9,9 +9,7 @@ const UiTra = () => {
 
   const fetchPracticeData = async () => {
     try {
-      setLoading(true);
-
-      // 1. Get the total count of all drills
+      // 1. Fetch total count from golf_drills table
       const { count, error: countError } = await supabase
         .from('golf_drills')
         .select('*', { count: 'exact', head: true });
@@ -19,7 +17,7 @@ const UiTra = () => {
       if (countError) throw countError;
       setDrillCount(count || 0);
 
-      // 2. Fetch the latest drill (NO JOIN)
+      // 2. Fetch the most recent drill entry
       const { data: drillData, error: drillError } = await supabase
         .from('golf_drills')
         .select('drill_name, score, created_at, user_id')
@@ -35,21 +33,22 @@ const UiTra = () => {
         throw drillError;
       }
 
-      // 3. Fetch the profile separately using the user_id from the drill
+      // 3. Manually fetch profile to avoid relationship errors
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('avatar_url, display_name')
         .eq('id', drillData.user_id)
         .single();
 
-      // Combine them into one state object
+      if (profileError) throw profileError;
+
       setLatestDrill({
         ...drillData,
-        profiles: profileData // Structured to match your UI's expectation
+        profiles: profileData
       });
 
-    } catch (error: any) {
-      console.error('Error details:', error.message || error);
+    } catch (error) {
+      console.log('Build/Fetch Error:', error);
     } finally {
       setLoading(false);
     }
@@ -59,7 +58,13 @@ const UiTra = () => {
     fetchPracticeData();
   }, []);
 
-  if (loading) return <ActivityIndicator style={{ marginTop: 50 }} color="#2e7d32" />;
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color="#2e7d32" />
+      </View>
+    );
+  }
 
   const dateString = latestDrill?.created_at 
     ? new Date(latestDrill.created_at).toISOString().split('T')[0] 
@@ -92,37 +97,34 @@ const UiTra = () => {
           </View>
         </View>
       ) : (
-        <View style={styles.emptyCard}>
-          <Text style={{ color: '#888' }}>No practice sessions yet.</Text>
-        </View>
+        <Text style={{ color: '#888', textAlign: 'center' }}>No drills recorded.</Text>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { padding: 16, backgroundColor: '#000' }, // Dark theme container
+  container: { padding: 16 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  headerText: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-  countText: { fontSize: 18, color: '#666', marginLeft: 8 },
+  headerText: { fontSize: 22, fontWeight: 'bold', color: '#fff' }, // Dark theme
+  countText: { fontSize: 18, color: '#aaa', marginLeft: 8 },
   card: {
     backgroundColor: '#1a1a1a', 
     borderRadius: 16,
     padding: 20,
     flexDirection: 'row',
     borderWidth: 2,
-    borderColor: '#2e7d32', // Subtle green border for the dark theme
-    justifyContent: 'space-between',
+    borderColor: '#2e7d32', // Matches Hulta GK theme
   },
   leftColumn: { flex: 1 },
-  rightColumn: { justifyContent: 'center', alignItems: 'flex-end' },
-  drillName: { fontSize: 20, fontWeight: 'bold', color: '#fff' },
-  dateText: { fontSize: 14, color: '#aaa', marginVertical: 4 },
-  profileBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  avatar: { width: 32, height: 32, borderRadius: 16, marginRight: 8, backgroundColor: '#333' },
-  displayName: { fontSize: 14, color: '#eee' },
-  scoreText: { fontSize: 42, fontWeight: '900', color: '#ff4444' },
-  emptyCard: { padding: 40, alignItems: 'center' }
+  rightColumn: { justifyContent: 'center' },
+  drillName: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
+  dateText: { fontSize: 13, color: '#888', marginVertical: 4 },
+  profileBox: { flexDirection: 'row', alignItems: 'center', marginTop: 10 },
+  avatar: { width: 28, height: 28, borderRadius: 14, marginRight: 8 },
+  displayName: { fontSize: 12, color: '#ccc' },
+  scoreText: { fontSize: 40, fontWeight: 'bold', color: '#ff4444' } // High-contrast score
 });
 
 export default UiTra;
