@@ -122,11 +122,16 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
   const updateProfileMutation = useMutation({
     mutationFn: async (updates: { username?: string; display_name?: string; avatar_url?: string | null }) => {
       if (!userId) throw new Error('Not authenticated');
-      console.log('[ProfileContext] Updating profile:', updates);
+      console.log('[ProfileContext] Updating profile via upsert:', updates);
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', userId)
+        .upsert({
+          id: userId,
+          username: updates.username,
+          display_name: updates.display_name,
+          avatar_url: updates.avatar_url,
+          updated_at: new Date(),
+        })
         .select()
         .single();
       if (error) throw error;
