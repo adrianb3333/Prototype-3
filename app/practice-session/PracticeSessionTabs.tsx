@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import DrillsTab from './tabs/DrillsTab';
 
 type PracticeTab = 'my' | 'swing' | 'flight' | 'notes' | 'drills';
 
-const tabs: { key: PracticeTab; label: string; icon: React.ReactNode }[] = [
+const tabsConfig: { key: PracticeTab; label: string; icon: React.ReactNode }[] = [
   { key: 'my', label: 'My', icon: <User size={20} /> },
   { key: 'swing', label: 'Swing', icon: <Activity size={20} /> },
   { key: 'flight', label: 'Flight', icon: <Plane size={20} /> },
@@ -31,76 +31,98 @@ export default function PracticeSessionTabs() {
   const [isDrillActive, setIsDrillActive] = useState(false);
   const { minimizeSession } = useSession();
 
-  const renderContent = () => {
+  const handleDrillActiveChange = useCallback((active: boolean) => {
+    setIsDrillActive(active);
+  }, []);
+
+  const renderNonDrillContent = () => {
     switch (activeTab) {
       case 'my': return <MyTab />;
       case 'swing': return <SwingTab />;
       case 'flight': return <FlightTab />;
       case 'notes': return <NotesTab />;
-      case 'drills': return <DrillsTab onDrillActiveChange={setIsDrillActive} />;
+      default: return null;
     }
   };
 
-  if (isDrillActive) {
-    return (
-      <View style={styles.fullScreenContainer}>
-        {renderContent()}
-      </View>
-    );
-  }
+  const isDrillFullScreen = isDrillActive && activeTab === 'drills';
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={minimizeSession} style={styles.minimizeButton}>
-          <ChevronDown size={28} color={Colors.text} strokeWidth={2.5} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Practice Session</Text>
-        <View style={styles.headerRight}>
-          <Text style={styles.duration}>45:12</Text>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        {renderContent()}
-      </ScrollView>
-
-      <View style={styles.tabBar}>
-        {tabs.map((tab) => (
-          <TouchableOpacity
-            key={tab.key}
-            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-            onPress={() => setActiveTab(tab.key)}
-            activeOpacity={0.7}
-          >
-            <View style={activeTab === tab.key ? styles.iconActive : styles.iconInactive}>
-              {React.cloneElement(tab.icon as React.ReactElement<{ color: string }>, {
-                color: activeTab === tab.key ? Colors.accent : Colors.tabInactive,
-              })}
+    <View style={styles.root}>
+      {!isDrillFullScreen && (
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={minimizeSession} style={styles.minimizeButton}>
+              <ChevronDown size={28} color={Colors.text} strokeWidth={2.5} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Practice Session</Text>
+            <View style={styles.headerRight}>
+              <Text style={styles.duration}>45:12</Text>
             </View>
-            <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+          </View>
+
+          {activeTab !== 'drills' && (
+            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+              {renderNonDrillContent()}
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      )}
+
+      <View style={activeTab === 'drills' ? (isDrillFullScreen ? styles.fullScreenDrill : styles.drillInline) : styles.hidden}>
+        <DrillsTab onDrillActiveChange={handleDrillActiveChange} />
       </View>
-    </SafeAreaView>
+
+      {!isDrillFullScreen && (
+        <View style={styles.tabBar}>
+          {tabsConfig.map((tab) => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.7}
+            >
+              <View style={activeTab === tab.key ? styles.iconActive : styles.iconInactive}>
+                {React.cloneElement(tab.icon as React.ReactElement<{ color: string }>, {
+                  color: activeTab === tab.key ? Colors.accent : Colors.tabInactive,
+                })}
+              </View>
+              <Text style={[styles.tabLabel, activeTab === tab.key && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: Colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-  fullScreenContainer: {
+  fullScreenDrill: {
     flex: 1,
     backgroundColor: '#000',
   },
+  drillInline: {
+    flex: 1,
+  },
+  hidden: {
+    width: 0,
+    height: 0,
+    overflow: 'hidden' as const,
+  },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: Colors.surface,
@@ -110,8 +132,8 @@ const styles = StyleSheet.create({
   minimizeButton: {
     width: 44,
     height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   headerTitle: {
     fontSize: 17,
@@ -137,7 +159,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   tabBar: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
@@ -146,7 +168,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 8,
   },
   tabActive: {},
