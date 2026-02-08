@@ -17,6 +17,17 @@ export interface FollowRelation {
   created_at: string;
 }
 
+function resolveAvatarUrl(avatarPath: string | null): string | null {
+  if (!avatarPath) return null;
+  if (avatarPath.startsWith('http')) return avatarPath;
+  const { data } = supabase.storage.from('avatars').getPublicUrl(avatarPath);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
+function resolveProfileAvatar(profile: UserProfile): UserProfile {
+  return { ...profile, avatar_url: resolveAvatarUrl(profile.avatar_url) };
+}
+
 export const [ProfileProvider, useProfile] = createContextHook(() => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
@@ -61,13 +72,13 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
             .single();
           if (createErr) {
             console.error('[ProfileContext] Create profile error:', createErr.message);
-            return newProfile as UserProfile;
+            return resolveProfileAvatar(newProfile as UserProfile);
           }
-          return created as UserProfile;
+          return resolveProfileAvatar(created as UserProfile);
         }
         return null;
       }
-      return data as UserProfile;
+      return resolveProfileAvatar(data as UserProfile);
     },
     enabled: !!userId,
   });
@@ -85,7 +96,7 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
         console.log('[ProfileContext] Followers error:', error.message);
         return [];
       }
-      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean);
+      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean).map(resolveProfileAvatar);
     },
     enabled: !!userId,
   });
@@ -103,7 +114,7 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
         console.log('[ProfileContext] Following error:', error.message);
         return [];
       }
-      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean);
+      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean).map(resolveProfileAvatar);
     },
     enabled: !!userId,
   });
@@ -153,33 +164,38 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
     },
   });
 
-  const { mutateAsync: updateProfileAsync } = updateProfileMutation;
-
   const uploadAvatar = useCallback(async (uri: string) => {
     if (!userId) throw new Error('Not authenticated');
     console.log('[ProfileContext] Uploading avatar from:', uri);
-    const ext = uri.split('.').pop() ?? 'jpg';
-    const fileName = `${userId}/avatar.${ext}`;
+    const fileName = `${userId}/profile.jpg`;
 
     const response = await fetch(uri);
     const blob = await response.blob();
 
-    const { error: uploadError } = await supabase.storage
+    const { data, error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(fileName, blob, { upsert: true, contentType: `image/${ext}` });
+      .upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' });
 
     if (uploadError) {
       console.error('[ProfileContext] Upload error:', uploadError.message);
       throw uploadError;
     }
+    console.log('[ProfileContext] Upload success:', data);
 
-    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
-    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
-    console.log('[ProfileContext] Avatar URL:', publicUrl);
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ avatar_url: fileName })
+      .eq('id', userId);
 
-    await updateProfileAsync({ avatar_url: publicUrl });
-    return publicUrl;
-  }, [userId, updateProfileAsync]);
+    if (updateError) {
+      console.error('[ProfileContext] Profile update error:', updateError.message);
+      throw updateError;
+    }
+
+    console.log('[ProfileContext] Profile avatar_url updated to:', fileName);
+    queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+    return fileName;
+  }, [userId, queryClient]);
 
   const isFollowing = useCallback((targetUserId: string) => {
     return (followingQuery.data ?? []).some((u) => u.id === targetUserId);
