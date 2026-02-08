@@ -13,6 +13,7 @@ import {
   Animated,
   Image,
   KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Settings, Camera, X, User } from 'lucide-react-native';
@@ -20,6 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useProfile, UserProfile } from '@/contexts/ProfileContext';
+import UiTra from '@/components/probygg/UiTra';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -64,7 +66,7 @@ export default function ProfileScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim]);
 
   const openEditModal = useCallback(() => {
     console.log('[Profile] Opening edit modal');
@@ -221,6 +223,7 @@ export default function ProfileScreen() {
         </View>
       </SafeAreaView>
 
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.profileSection}>
           <View style={styles.profileRow}>
@@ -281,7 +284,10 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
+
+        <UiTra />
       </Animated.View>
+      </ScrollView>
 
       <Modal
         visible={editModalVisible}
@@ -443,9 +449,13 @@ const styles = StyleSheet.create({
   settingsButton: {
     padding: 6,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: 20,
     paddingTop: 8,
+    paddingBottom: 30,
   },
   profileSection: {},
   profileRow: {

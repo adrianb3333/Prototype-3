@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 const UiTra = () => {
   const [loading, setLoading] = useState(true);
@@ -109,85 +109,85 @@ const UiTra = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#f5f5f5',
-    flex: 1,
+    paddingTop: 20,
+    paddingHorizontal: 0,
   },
   center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 30,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 15,
+    flexDirection: 'row' as const,
+    alignItems: 'baseline' as const,
+    marginBottom: 12,
   },
   headerText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 17,
+    fontWeight: '700' as const,
+    color: '#EFEFEF',
   },
   countText: {
-    fontSize: 18,
+    fontSize: 14,
     color: '#666',
     marginLeft: 8,
   },
   card: {
-    backgroundColor: '#b8e3cc', // Matching the light green tint
-    borderRadius: 20,
-    borderWidth: 6,
-    borderColor: '#228b22', // Forest green border
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    minHeight: 150,
+    backgroundColor: '#1A2E1A',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#1DB954',
+    padding: 16,
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    minHeight: 120,
   },
   leftColumn: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'space-between' as const,
   },
   rightColumn: {
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    justifyContent: 'center' as const,
+    alignItems: 'flex-end' as const,
   },
   drillName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#000',
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: '#EFEFEF',
   },
   dateText: {
-    fontSize: 14,
-    color: '#444',
+    fontSize: 13,
+    color: '#888',
     marginVertical: 4,
   },
   profileBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 8,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: '#ddd',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: '#2A2A2A',
   },
   displayName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: '#B0B0B0',
   },
   scoreText: {
-    fontSize: 52,
-    fontWeight: '900',
-    color: '#a00', // Deep red for the score
+    fontSize: 44,
+    fontWeight: '900' as const,
+    color: '#1DB954',
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: 'center' as const,
     marginTop: 20,
-    color: '#999',
-  }
+    color: '#666',
+    fontSize: 14,
+  },
 });
 
 export default UiTra;
