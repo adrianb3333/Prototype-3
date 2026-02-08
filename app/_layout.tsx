@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SessionProvider, useSession } from "@/contexts/SessionContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 import PlaySessionTabs from "@/app/play-session/PlaySessionTabs";
 import PracticeSessionTabs from "@/app/practice-session/PracticeSessionTabs";
 import ProfileContent from "@/components/ProfileContent";
@@ -139,7 +140,9 @@ export default function RootLayout() {
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={styles.container}>
         <SessionProvider>
-          <RootLayoutNav />
+          <ProfileProvider>
+            <RootLayoutNav />
+          </ProfileProvider>
         </SessionProvider>
       </GestureHandlerRootView>
     </QueryClientProvider>

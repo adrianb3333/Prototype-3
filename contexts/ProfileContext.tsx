@@ -1,0 +1,208 @@
+import createContextHook from '@nkzw/create-context-hook';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+
+export interface UserProfile {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+export interface FollowRelation {
+  id: string;
+  follower_id: string;
+  following_id: string;
+  created_at: string;
+}
+
+export const [ProfileProvider, useProfile] = createContextHook(() => {
+  const queryClient = useQueryClient();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[ProfileContext] Got session user:', session?.user?.id);
+      setUserId(session?.user?.id ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('[ProfileContext] Auth changed, user:', session?.user?.id);
+      setUserId(session?.user?.id ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const profileQuery = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      console.log('[ProfileContext] Fetching profile for:', userId);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      if (error) {
+        console.log('[ProfileContext] Profile fetch error:', error.message);
+        if (error.code === 'PGRST116') {
+          console.log('[ProfileContext] No profile found, creating one...');
+          const { data: authUser } = await supabase.auth.getUser();
+          const newProfile = {
+            id: userId,
+            username: authUser.user?.email?.split('@')[0] ?? 'user',
+            display_name: authUser.user?.email?.split('@')[0] ?? 'User',
+            avatar_url: null,
+          };
+          const { data: created, error: createErr } = await supabase
+            .from('profiles')
+            .insert(newProfile)
+            .select()
+            .single();
+          if (createErr) {
+            console.error('[ProfileContext] Create profile error:', createErr.message);
+            return newProfile as UserProfile;
+          }
+          return created as UserProfile;
+        }
+        return null;
+      }
+      return data as UserProfile;
+    },
+    enabled: !!userId,
+  });
+
+  const followersQuery = useQuery({
+    queryKey: ['followers', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      console.log('[ProfileContext] Fetching followers for:', userId);
+      const { data, error } = await supabase
+        .from('follows')
+        .select('follower_id, profiles!follows_follower_id_fkey(id, username, display_name, avatar_url)')
+        .eq('following_id', userId);
+      if (error) {
+        console.log('[ProfileContext] Followers error:', error.message);
+        return [];
+      }
+      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean);
+    },
+    enabled: !!userId,
+  });
+
+  const followingQuery = useQuery({
+    queryKey: ['following', userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      console.log('[ProfileContext] Fetching following for:', userId);
+      const { data, error } = await supabase
+        .from('follows')
+        .select('following_id, profiles!follows_following_id_fkey(id, username, display_name, avatar_url)')
+        .eq('follower_id', userId);
+      if (error) {
+        console.log('[ProfileContext] Following error:', error.message);
+        return [];
+      }
+      return (data ?? []).map((f: any) => f.profiles as UserProfile).filter(Boolean);
+    },
+    enabled: !!userId,
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: { username?: string; display_name?: string; avatar_url?: string | null }) => {
+      if (!userId) throw new Error('Not authenticated');
+      console.log('[ProfileContext] Updating profile:', updates);
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', userId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as UserProfile;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+    },
+  });
+
+  const toggleFollowMutation = useMutation({
+    mutationFn: async (targetUserId: string) => {
+      if (!userId) throw new Error('Not authenticated');
+      console.log('[ProfileContext] Toggle follow for:', targetUserId);
+      const { data: existing } = await supabase
+        .from('follows')
+        .select('id')
+        .eq('follower_id', userId)
+        .eq('following_id', targetUserId)
+        .single();
+
+      if (existing) {
+        console.log('[ProfileContext] Unfollowing:', targetUserId);
+        await supabase.from('follows').delete().eq('id', existing.id);
+        return { action: 'unfollowed' as const, targetUserId };
+      } else {
+        console.log('[ProfileContext] Following:', targetUserId);
+        await supabase.from('follows').insert({ follower_id: userId, following_id: targetUserId });
+        return { action: 'followed' as const, targetUserId };
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['followers', userId] });
+      queryClient.invalidateQueries({ queryKey: ['following', userId] });
+    },
+  });
+
+  const { mutateAsync: updateProfileAsync } = updateProfileMutation;
+
+  const uploadAvatar = useCallback(async (uri: string) => {
+    if (!userId) throw new Error('Not authenticated');
+    console.log('[ProfileContext] Uploading avatar from:', uri);
+    const ext = uri.split('.').pop() ?? 'jpg';
+    const fileName = `${userId}/avatar.${ext}`;
+
+    const response = await fetch(uri);
+    const blob = await response.blob();
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(fileName, blob, { upsert: true, contentType: `image/${ext}` });
+
+    if (uploadError) {
+      console.error('[ProfileContext] Upload error:', uploadError.message);
+      throw uploadError;
+    }
+
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(fileName);
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now();
+    console.log('[ProfileContext] Avatar URL:', publicUrl);
+
+    await updateProfileAsync({ avatar_url: publicUrl });
+    return publicUrl;
+  }, [userId, updateProfileAsync]);
+
+  const isFollowing = useCallback((targetUserId: string) => {
+    return (followingQuery.data ?? []).some((u) => u.id === targetUserId);
+  }, [followingQuery.data]);
+
+  return {
+    userId,
+    profile: profileQuery.data ?? null,
+    isLoading: profileQuery.isLoading,
+    followers: followersQuery.data ?? [],
+    following: followingQuery.data ?? [],
+    followersCount: (followersQuery.data ?? []).length,
+    followingCount: (followingQuery.data ?? []).length,
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdating: updateProfileMutation.isPending,
+    toggleFollow: toggleFollowMutation.mutateAsync,
+    isTogglingFollow: toggleFollowMutation.isPending,
+    uploadAvatar,
+    isFollowing,
+    refetchAll: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
+      queryClient.invalidateQueries({ queryKey: ['followers', userId] });
+      queryClient.invalidateQueries({ queryKey: ['following', userId] });
+    },
+  };
+});
