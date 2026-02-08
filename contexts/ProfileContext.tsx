@@ -101,6 +101,23 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
     enabled: !!userId,
   });
 
+  const allUsersQuery = useQuery({
+    queryKey: ['allUsers'],
+    queryFn: async () => {
+      console.log('[ProfileContext] Fetching all users');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .order('display_name', { ascending: true });
+      if (error) {
+        console.log('[ProfileContext] All users error:', error.message);
+        return [];
+      }
+      return (data ?? []).filter((u: any) => u.id !== userId).map((u: any) => resolveProfileAvatar(u as UserProfile));
+    },
+    enabled: !!userId,
+  });
+
   const followingQuery = useQuery({
     queryKey: ['following', userId],
     queryFn: async () => {
@@ -220,10 +237,13 @@ export const [ProfileProvider, useProfile] = createContextHook(() => {
     isTogglingFollow: toggleFollowMutation.isPending,
     uploadAvatar,
     isFollowing,
+    allUsers: allUsersQuery.data ?? [],
+    isLoadingAllUsers: allUsersQuery.isLoading,
     refetchAll: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', userId] });
       queryClient.invalidateQueries({ queryKey: ['followers', userId] });
       queryClient.invalidateQueries({ queryKey: ['following', userId] });
+      queryClient.invalidateQueries({ queryKey: ['allUsers'] });
     },
   };
 });

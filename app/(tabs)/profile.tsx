@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Settings, Camera, X, UserCheck, UserPlus } from 'lucide-react-native';
+import { Settings, Camera, X, User } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -36,11 +36,13 @@ export default function ProfileScreen() {
     toggleFollow,
     isTogglingFollow,
     isFollowing,
+    allUsers,
+    isLoadingAllUsers,
   } = useProfile();
 
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
   const [followsModalVisible, setFollowsModalVisible] = useState<boolean>(false);
-  const [followsTab, setFollowsTab] = useState<'followers' | 'following'>('followers');
+  const [followsTab, setFollowsTab] = useState<'hitta' | 'followers' | 'following'>('hitta');
   const [editUsername, setEditUsername] = useState<string>('');
   const [editDisplayName, setEditDisplayName] = useState<string>('');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState<boolean>(false);
@@ -121,7 +123,7 @@ export default function ProfileScreen() {
     }
   }, [uploadAvatar]);
 
-  const openFollowsModal = useCallback((tab: 'followers' | 'following') => {
+  const openFollowsModal = useCallback((tab: 'hitta' | 'followers' | 'following') => {
     console.log('[Profile] Opening follows modal, tab:', tab);
     setFollowsTab(tab);
     setFollowsModalVisible(true);
@@ -147,34 +149,45 @@ export default function ProfileScreen() {
             <Image source={{ uri: item.avatar_url }} style={styles.followUserAvatar} />
           ) : (
             <View style={styles.followUserAvatarPlaceholder}>
-              <Text style={styles.followUserAvatarText}>
-                {(item.display_name || item.username || '?')[0].toUpperCase()}
-              </Text>
+              <User size={20} color="#666" />
             </View>
           )}
           <View style={styles.followUserInfo}>
-            <Text style={styles.followUserName} numberOfLines={1}>{item.display_name}</Text>
+            <Text style={styles.followUserName} numberOfLines={1}>{item.display_name || item.username || 'Användare'}</Text>
             <Text style={styles.followUserUsername} numberOfLines={1}>@{item.username}</Text>
           </View>
         </View>
         <TouchableOpacity
-          style={[styles.followBtn, amFollowing && styles.followBtnActive]}
+          style={[styles.followBtn, amFollowing && styles.followBtnFollowing]}
           onPress={() => handleToggleFollow(item.id)}
           disabled={isTogglingFollow}
           activeOpacity={0.7}
         >
-          {amFollowing ? (
-            <UserCheck size={14} color="#fff" />
-          ) : (
-            <UserPlus size={14} color="#fff" />
-          )}
-          <Text style={styles.followBtnText}>
+          <Text style={[styles.followBtnText, amFollowing && styles.followBtnTextFollowing]}>
             {amFollowing ? 'Följer' : 'Följ'}
           </Text>
         </TouchableOpacity>
       </View>
     );
   }, [isFollowing, handleToggleFollow, isTogglingFollow]);
+
+  const getModalTitle = useCallback(() => {
+    if (followsTab === 'hitta') return 'Hitta';
+    if (followsTab === 'followers') return 'Följare';
+    return 'Följer';
+  }, [followsTab]);
+
+  const getListData = useCallback(() => {
+    if (followsTab === 'hitta') return allUsers;
+    if (followsTab === 'followers') return followers;
+    return following;
+  }, [followsTab, allUsers, followers, following]);
+
+  const getEmptyText = useCallback(() => {
+    if (followsTab === 'hitta') return 'Inga användare hittades';
+    if (followsTab === 'followers') return 'Inga följare ännu';
+    return 'Följer ingen ännu';
+  }, [followsTab]);
 
   const initials = (profile?.display_name || profile?.username || '?')
     .split(' ')
@@ -340,15 +353,22 @@ export default function ProfileScreen() {
           <View style={styles.followsSheet}>
             <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
-                {followsTab === 'followers' ? 'Följare' : 'Följer'}
-              </Text>
+              <Text style={styles.modalTitle}>{getModalTitle()}</Text>
               <TouchableOpacity onPress={() => setFollowsModalVisible(false)} style={styles.modalCloseBtn}>
                 <X size={22} color="#999" />
               </TouchableOpacity>
             </View>
 
             <View style={styles.tabSwitcher}>
+              <TouchableOpacity
+                style={[styles.tabBtn, followsTab === 'hitta' && styles.tabBtnActive]}
+                onPress={() => setFollowsTab('hitta')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabBtnText, followsTab === 'hitta' && styles.tabBtnTextActive]}>
+                  Hitta
+                </Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tabBtn, followsTab === 'followers' && styles.tabBtnActive]}
                 onPress={() => setFollowsTab('followers')}
@@ -369,20 +389,24 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
 
-            <FlatList
-              data={followsTab === 'followers' ? followers : following}
-              keyExtractor={(item) => item.id}
-              renderItem={renderFollowUser}
-              contentContainerStyle={styles.followsList}
-              showsVerticalScrollIndicator={false}
-              ListEmptyComponent={
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyText}>
-                    {followsTab === 'followers' ? 'Inga följare ännu' : 'Följer ingen ännu'}
-                  </Text>
-                </View>
-              }
-            />
+            {followsTab === 'hitta' && isLoadingAllUsers ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="small" color="#1DB954" />
+              </View>
+            ) : (
+              <FlatList
+                data={getListData()}
+                keyExtractor={(item) => item.id}
+                renderItem={renderFollowUser}
+                contentContainerStyle={styles.followsList}
+                showsVerticalScrollIndicator={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>{getEmptyText()}</Text>
+                  </View>
+                }
+              />
+            )}
           </View>
         </View>
       </Modal>
@@ -670,17 +694,24 @@ const styles = StyleSheet.create({
     alignItems: 'center' as const,
     gap: 5,
     backgroundColor: '#1DB954',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    borderRadius: 20,
+    minWidth: 80,
+    justifyContent: 'center' as const,
   },
-  followBtnActive: {
-    backgroundColor: '#2A2A2A',
+  followBtnFollowing: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   followBtnText: {
     fontSize: 13,
-    fontWeight: '600' as const,
+    fontWeight: '700' as const,
     color: '#fff',
+  },
+  followBtnTextFollowing: {
+    color: '#333',
   },
   emptyState: {
     paddingVertical: 40,
