@@ -34,7 +34,7 @@ export default function PracticeStep3Screen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Setup Practice</Text>
         <View style={styles.stepIndicator}>
-          <Text style={styles.stepText}>3/3</Text>
+          <Text style={styles.stepText}>2/2</Text>
         </View>
       </View>
 

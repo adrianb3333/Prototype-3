@@ -31,7 +31,7 @@ export default function PracticeStep1Screen() {
   };
 
   const handleNext = () => {
-    router.push('/practice-setup/step2');
+    router.push('/practice-setup/step3');
   };
 
   return (
@@ -42,7 +42,7 @@ export default function PracticeStep1Screen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Setup Practice</Text>
         <View style={styles.stepIndicator}>
-          <Text style={styles.stepText}>1/3</Text>
+          <Text style={styles.stepText}>1/2</Text>
         </View>
       </View>
 
